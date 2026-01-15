@@ -9,8 +9,6 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
-#include "Spike.h"
-#include "WallSpike.h"
 #include "Engine.h"
 
 // Sets default values
@@ -54,12 +52,46 @@ void ASurferCharacter::BeginPlay()
 		this, &ASurferCharacter::OnOverlapBegin);
 
 	CanMove = true;
+	
+	// Initialize lane position (start in center lane)
+	CurrentLane = 1;
+	TargetLaneY = GetActorLocation().Y;
+	
+	// Store the initial forward-facing rotation
+	BaseRotationYaw = GetActorRotation().Yaw;
+	TargetRotationYaw = BaseRotationYaw;
 }
 
 // Called every frame
 void ASurferCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	// Constant forward running
+	if (CanMove)
+	{
+		AddMovementInput(FVector(1.0f, 0.0f, 0.0f), RunSpeed * DeltaTime);
+	}
+
+	// Smooth lane switching
+	if (bIsSwitchingLane)
+	{
+		FVector CurrentLocation = GetActorLocation();
+		float NewY = FMath::FInterpTo(CurrentLocation.Y, TargetLaneY, DeltaTime, LaneSwitchSpeed);
+		SetActorLocation(FVector(CurrentLocation.X, NewY, CurrentLocation.Z));
+		
+		// Check if we've reached the target lane
+		if (FMath::IsNearlyEqual(NewY, TargetLaneY, 1.0f))
+		{
+			bIsSwitchingLane = false;
+			TargetRotationYaw = BaseRotationYaw;  // Return to forward facing
+		}
+	}
+	
+	// Smooth rotation interpolation
+	FRotator CurrentRotation = GetActorRotation();
+	float NewYaw = FMath::FInterpTo(CurrentRotation.Yaw, TargetRotationYaw, DeltaTime, RotationInterpSpeed);
+	SetActorRotation(FRotator(CurrentRotation.Pitch, NewYaw, CurrentRotation.Roll));
 
 	tempPos = GetActorLocation();
 	tempPos.X -= 850.0f;
@@ -74,15 +106,48 @@ void ASurferCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
-
-	PlayerInputComponent->BindAxis("MoveRight", this, &ASurferCharacter::MoveRight);
+	
+	// Lane switching
+	PlayerInputComponent->BindAction("SwitchLaneLeft", IE_Pressed, this, &ASurferCharacter::SwitchLaneLeft);
+	PlayerInputComponent->BindAction("SwitchLaneRight", IE_Pressed, this, &ASurferCharacter::SwitchLaneRight);
 }
 
-void ASurferCharacter::MoveRight(float Value)
+void ASurferCharacter::SwitchLaneLeft()
 {
-	if (CanMove)
+	if (!CanMove) return;
+	
+	// Check if we can go left
+	if (CurrentLane > MinLane)
 	{
-		AddMovementInput(FVector(0.0f, 1.0f, 0.0f), Value);
+		CurrentLane--;
+		TargetLaneY -= LaneDistance;
+		bIsSwitchingLane = true;
+		TargetRotationYaw = BaseRotationYaw - LaneSwitchTurnAngle;  // Turn left
+		UE_LOG(LogTemp, Warning, TEXT("Switching to lane: %d"), CurrentLane);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Already at leftmost lane!"));
+	}
+}
+
+void ASurferCharacter::SwitchLaneRight()
+{
+	if (!CanMove) return;
+	
+	// Check if we can go right
+	if (CurrentLane < MaxLane)
+	{
+		CurrentLane++;
+		TargetLaneY += LaneDistance;
+		bIsSwitchingLane = true;
+		TargetRotationYaw = BaseRotationYaw + LaneSwitchTurnAngle;  // Turn right
+		bIsSwitchingLane = true;
+		UE_LOG(LogTemp, Warning, TEXT("Switching to lane: %d"), CurrentLane);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Already at rightmost lane!"));
 	}
 }
 

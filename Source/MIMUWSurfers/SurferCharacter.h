@@ -28,9 +28,6 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-protected:
-	void MoveRight(float Value);
-
 public:
 	class UCameraComponent* GetFrontViewCameraComponent() const
 	{
@@ -42,9 +39,43 @@ public:
 	UFUNCTION()
 		void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherOverlappedComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
+	// Lane switching
+	void SwitchLaneLeft();
+	void SwitchLaneRight();
+
 private:
 	float zPosition;
 	FVector tempPos = FVector(0.0f, 0.0f, 0.0f);
 
 	bool CanMove;
+	
+	// Auto running
+	UPROPERTY(EditAnywhere, Category = "Movement")
+	float RunSpeed = 1000.0f;
+
+	// Lane system (0 = left, 1 = center, 2 = right)
+	int32 CurrentLane = 1;
+	const int32 MinLane = 0;
+	const int32 MaxLane = 2;
+	
+	// Distance between lanes (adjust based on your level)
+	UPROPERTY(EditAnywhere, Category = "Lane")
+	float LaneDistance = 200.0f;
+	
+	// Target Y position for smooth lane switching
+	float TargetLaneY;
+	bool bIsSwitchingLane = false;
+	
+	UPROPERTY(EditAnywhere, Category = "Lane")
+	float LaneSwitchSpeed = 15.0f;
+	
+	// Lane switch rotation (visual turn)
+	UPROPERTY(EditAnywhere, Category = "Lane")
+	float LaneSwitchTurnAngle = 60.0f;  // How much to turn when switching
+	
+	float TargetRotationYaw = 0.0f;
+	float BaseRotationYaw = 0.0f;  // The forward-facing rotation
+	
+	UPROPERTY(EditAnywhere, Category = "Lane")
+	float RotationInterpSpeed = 20.0f;
 };
