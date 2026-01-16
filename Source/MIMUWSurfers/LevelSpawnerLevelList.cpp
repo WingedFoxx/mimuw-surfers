@@ -76,7 +76,7 @@ void ALevelSpawnerLevelList::SpawnLevel(bool IsFirst)
 	}
 
 	// Optimization: Destroy the old level to free up memory
-	if (SpawnedLevels.Num() > 5)
+	if (SpawnedLevels.Num() > 10)
 	{
 		ABaseLevel* OldLevel = SpawnedLevels[0];
 		if (OldLevel)
