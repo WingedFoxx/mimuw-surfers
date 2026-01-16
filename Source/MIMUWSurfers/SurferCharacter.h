@@ -39,6 +39,12 @@ public:
 	UFUNCTION()
 		void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherOverlappedComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
+	// Dodging
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	UAnimMontage* dodgeMontage;	
+	bool isDodging = false;
+	void Dodge();
+
 	// Lane switching
 	void SwitchLaneLeft();
 	void SwitchLaneRight();
@@ -48,6 +54,9 @@ private:
 	FVector tempPos = FVector(0.0f, 0.0f, 0.0f);
 
 	bool CanMove;
+	
+	// Player collision height
+	float DefaultCapsuleHalfHeight;
 	
 	// Auto running
 	UPROPERTY(EditAnywhere, Category = "Movement")
@@ -78,4 +87,6 @@ private:
 	
 	UPROPERTY(EditAnywhere, Category = "Lane")
 	float RotationInterpSpeed = 20.0f;
+	
+	void StopDodge();
 };
