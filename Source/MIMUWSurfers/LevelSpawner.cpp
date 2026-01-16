@@ -35,7 +35,7 @@ void ALevelSpawner::Tick(float DeltaTime)
 void ALevelSpawner::SpawnLevel(bool IsFirst)
 {
 	SpawnLocation = FVector(1000.0f, 0.0f, 0.0f);  // Spawn along X (forward)
-	SpawnRotation = FRotator(0.0f, 0.0f, 0.0f);   // No rotation needed
+	SpawnRotation = FRotator(0.0f, 90.0f, 0.0f);   // No rotation needed
 
 	if (!IsFirst)
 	{
