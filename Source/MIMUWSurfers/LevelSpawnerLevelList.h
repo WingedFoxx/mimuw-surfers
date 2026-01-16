@@ -4,18 +4,19 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "LevelSpawner.generated.h"
+#include "LevelSpawnerLevelList.generated.h"
 
 class ABaseLevel;
 
 UCLASS()
-class MIMUWSURFERS_API ALevelSpawner : public AActor
+class MIMUWSURFERS_API ALevelSpawnerLevelList : public AActor
 {
 	GENERATED_BODY()
 	
 public:	
 	// Sets default values for this actor's properties
-	ALevelSpawner();
+	ALevelSpawnerLevelList();
+	
 
 protected:
 	// Called when the game starts or when spawned
@@ -24,32 +25,22 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-
-public:
 	UFUNCTION()
-		void SpawnLevel(bool IsFirst);
+	void SpawnLevel(bool IsFirst);
 
 	UFUNCTION()
 	void OnOverlapBegin(UPrimitiveComponent* OverlappedComp,
-		AActor* OtherActor, UPrimitiveComponent* OtherOverlappedComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+		AActor* OtherActor, UPrimitiveComponent* OtherOverlappedComponent,
+		int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 protected:
 	APawn* Player;
-	UPROPERTY(EditAnywhere)
-		TSubclassOf<ABaseLevel> Level1;
-	UPROPERTY(EditAnywhere)
-		TSubclassOf<ABaseLevel> Level2;
-	UPROPERTY(EditAnywhere)
-		TSubclassOf<ABaseLevel> Level3;
-	UPROPERTY(EditAnywhere)
-		TSubclassOf<ABaseLevel> Level4;
-	UPROPERTY(EditAnywhere)
-		TSubclassOf<ABaseLevel> Level5;
-
-	TArray<ABaseLevel*> LevelList;
+	UPROPERTY(EditAnywhere, Category = "Levels")
+	TArray<TSubclassOf<ABaseLevel>> Levels;
+	TArray<ABaseLevel*> SpawnedLevels;
 
 public:
-	int RandomLevel;
+	int RandomLevelIndex;
 	FVector SpawnLocation = FVector();
 	FRotator SpawnRotation = FRotator();
 	FActorSpawnParameters SpawnInfo = FActorSpawnParameters();
