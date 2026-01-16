@@ -7,7 +7,9 @@
 #include "Train.h"
 #include "Components/CapsuleComponent.h"
 #include "Camera/CameraComponent.h"
+#include "Components/InputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 #include "Engine.h"
 
@@ -53,6 +55,9 @@ void ASurferCharacter::BeginPlay()
 		this, &ASurferCharacter::OnOverlapBegin);
 
 	CanMove = true;
+
+	// Store initial character size / collision height
+	DefaultCapsuleHalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 	
 	// Initialize lane position (start in center lane)
 	CurrentLane = 1;
@@ -140,6 +145,9 @@ void ASurferCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	// Lane switching
 	PlayerInputComponent->BindAction("SwitchLaneLeft", IE_Pressed, this, &ASurferCharacter::SwitchLaneLeft);
 	PlayerInputComponent->BindAction("SwitchLaneRight", IE_Pressed, this, &ASurferCharacter::SwitchLaneRight);
+	
+	// Dodge binding
+	PlayerInputComponent->BindAction("Dodge", IE_Pressed, this, &ASurferCharacter::Dodge);
 }
 
 void ASurferCharacter::SwitchLaneLeft()
@@ -179,6 +187,34 @@ void ASurferCharacter::SwitchLaneRight()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Already at rightmost lane!"));
 	}
+}
+
+void ASurferCharacter::Dodge()
+{
+	if (isDodging || !CanMove) return;
+
+	// CanJump to make sure we don't dodge mid-air
+	if (CanJump() && dodgeMontage)
+	{
+		float Duration = PlayAnimMontage(dodgeMontage);
+		isDodging = true;
+
+		// Shrink the Collision Capsule to half height
+        // The "true" argument updates overlapping physics immediately
+        GetCapsuleComponent()->SetCapsuleHalfHeight(DefaultCapsuleHalfHeight / 2.0f, true);
+
+		// Optional: Reset isDodging after the animation finishes
+		// A timer or Animation Notify is usually better, but for simplicity:
+		FTimerHandle TimerHandle;
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ASurferCharacter::StopDodge, Duration, false);
+	}
+}
+
+void ASurferCharacter::StopDodge()
+{
+	isDodging = false;
+	// Restore the collision size
+    GetCapsuleComponent()->SetCapsuleHalfHeight(DefaultCapsuleHalfHeight, true);
 }
 
 void ASurferCharacter::RestartLevel()
