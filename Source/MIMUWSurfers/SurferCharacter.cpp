@@ -4,7 +4,6 @@
 #include "SurferCharacter.h"
 
 #include "Spike.h"
-#include "WallSpike.h"
 #include "Components/CapsuleComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -164,10 +163,9 @@ void ASurferCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActo
 		// Debug: Print what actor we're overlapping with
 		UE_LOG(LogTemp, Warning, TEXT("Overlap with: %s"), *OtherActor->GetName());
 		
-		AWallSpike* WallSpike = Cast<AWallSpike>(OtherActor);
 		ASpike* Spike = Cast<ASpike>(OtherActor);
 
-		if (WallSpike || Spike)
+		if (Spike)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Hit a spike! Restarting..."));
 			
