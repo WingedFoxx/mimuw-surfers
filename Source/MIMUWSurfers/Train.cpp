@@ -25,13 +25,6 @@ ATrain::ATrain()
 	FrontCollision->SetCollisionObjectType(ECC_GameTraceChannel1);  // Same as Spike
 	FrontCollision->SetCollisionResponseToAllChannels(ECR_Overlap);
 	FrontCollision->SetGenerateOverlapEvents(true);
-
-	// Create top collision (optional - for detecting player on top)
-	TopCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("TopCollision"));
-	TopCollision->SetupAttachment(RootComponent);
-	TopCollision->SetBoxExtent(FVector(200.0f, 100.0f, 10.0f));  // Flat box on top
-	TopCollision->SetRelativeLocation(FVector(0.0f, 0.0f, 110.0f));  // Position on top of train
-	TopCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);  // Just for reference
 }
 
 void ATrain::BeginPlay()

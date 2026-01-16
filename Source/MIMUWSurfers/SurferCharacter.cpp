@@ -4,6 +4,7 @@
 #include "SurferCharacter.h"
 
 #include "Spike.h"
+#include "Train.h"
 #include "Components/CapsuleComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -37,6 +38,7 @@ ASurferCharacter::ASurferCharacter()
 	GetCharacterMovement()->GroundFriction = 3.0f;
 	GetCharacterMovement()->MaxWalkSpeed = 600.0f;
 	GetCharacterMovement()->MaxFlySpeed = 600.0f;
+	GetCharacterMovement()->SetWalkableFloorAngle(75.0f);  // Allow walking up steeper ramps
 	// GetCharacterMovement()->bUseControllerDesiredRotation = false;
 	
 	zPosition = GetActorLocation().Z + 300.0f;
@@ -164,8 +166,9 @@ void ASurferCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActo
 		UE_LOG(LogTemp, Warning, TEXT("Overlap with: %s"), *OtherActor->GetName());
 		
 		ASpike* Spike = Cast<ASpike>(OtherActor);
+		ATrain* Train = Cast<ATrain>(OtherActor);
 
-		if (Spike)
+		if (Spike || Train)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Hit a spike! Restarting..."));
 			
