@@ -46,6 +46,12 @@ public:
 private:
 	float zPosition;
 	FVector tempPos = FVector(0.0f, 0.0f, 0.0f);
+	float TargetCameraZ = 0.0f;  // Target camera height (only updates when grounded)
+	
+	// Track if player was on elevated surface (train) before falling
+	float BaseGroundZ = 0.0f;  // Normal ground level
+	float LastGroundedZ = 0.0f;  // Z when player was last grounded
+	bool bWasOnElevatedSurface = false;
 
 	bool CanMove;
 	

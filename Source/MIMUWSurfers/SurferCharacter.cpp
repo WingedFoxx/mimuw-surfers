@@ -61,6 +61,11 @@ void ASurferCharacter::BeginPlay()
 	// Store the initial forward-facing rotation
 	BaseRotationYaw = GetActorRotation().Yaw;
 	TargetRotationYaw = BaseRotationYaw;
+	
+	// Initialize camera height
+	TargetCameraZ = GetActorLocation().Z + 300.0f;
+	BaseGroundZ = GetActorLocation().Z;
+	LastGroundedZ = BaseGroundZ;
 }
 
 // Called every frame
@@ -94,9 +99,33 @@ void ASurferCharacter::Tick(float DeltaTime)
 	float NewYaw = FMath::FInterpTo(CurrentRotation.Yaw, TargetRotationYaw, DeltaTime, RotationInterpSpeed);
 	SetActorRotation(FRotator(CurrentRotation.Pitch, NewYaw, CurrentRotation.Roll));
 
+	// Camera positioning
 	tempPos = GetActorLocation();
 	tempPos.X -= 850.0f;
-	tempPos.Z = zPosition;
+	
+	// Track if we're on an elevated surface (like a train)
+	if (!GetCharacterMovement()->IsFalling())
+	{
+		LastGroundedZ = GetActorLocation().Z;
+		// Consider elevated if more than 50 units above base ground
+		bWasOnElevatedSurface = (LastGroundedZ > BaseGroundZ + 50.0f);
+		TargetCameraZ = GetActorLocation().Z + 300.0f;
+	}
+	else if (bWasOnElevatedSurface && GetVelocity().Z < 0)
+	{
+		// Only follow camera down when falling OFF the train (below where we were standing)
+		// Don't follow if we're still above the train (jumping on top of it)
+		if (GetActorLocation().Z < LastGroundedZ - 10.0f)
+		{
+			TargetCameraZ = GetActorLocation().Z + 300.0f;
+		}
+	}
+	
+	// Camera falls faster than it rises (quicker descent from trains)
+	float CurrentCameraZ = SideViewCamera->GetComponentLocation().Z;
+	float CameraInterpSpeed = (TargetCameraZ < CurrentCameraZ) ? 15.0f : 5.0f;  // Fall fast, rise slow
+	tempPos.Z = FMath::FInterpTo(CurrentCameraZ, TargetCameraZ, DeltaTime, CameraInterpSpeed);
+	
 	SideViewCamera->SetWorldLocation(tempPos);
 }
 
