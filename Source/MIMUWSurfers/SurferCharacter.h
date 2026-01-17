@@ -20,6 +20,8 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	void HandleLaneSwitching(float DeltaTime);
+	void MoveCameraWhenFalling();
 
 public:	
 	// Called every frame
@@ -50,8 +52,13 @@ public:
 	void SwitchLaneRight();
 
 private:
-	float zPosition;
 	FVector tempPos = FVector(0.0f, 0.0f, 0.0f);
+	float TargetCameraZ = 0.0f;  // Target camera height (only updates when grounded)
+	
+	// Track if player was on elevated surface (train) before falling
+	float BaseGroundZ = 0.0f;  // Normal ground level
+	float LastGroundedZ = 0.0f;  // Z when player was last grounded
+	bool bWasOnElevatedSurface = false;
 
 	bool CanMove;
 	
@@ -66,6 +73,8 @@ private:
 	int32 CurrentLane = 1;
 	const int32 MinLane = 0;
 	const int32 MaxLane = 2;
+
+	float CameraOffset = 350.0f;
 	
 	// Distance between lanes (adjust based on your level)
 	UPROPERTY(EditAnywhere, Category = "Lane")

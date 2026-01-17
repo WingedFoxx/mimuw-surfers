@@ -4,6 +4,7 @@
 #include "SurferCharacter.h"
 
 #include "Spike.h"
+#include "Train.h"
 #include "Components/CapsuleComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/InputComponent.h"
@@ -39,9 +40,7 @@ ASurferCharacter::ASurferCharacter()
 	GetCharacterMovement()->GroundFriction = 3.0f;
 	GetCharacterMovement()->MaxWalkSpeed = 600.0f;
 	GetCharacterMovement()->MaxFlySpeed = 600.0f;
-	// GetCharacterMovement()->bUseControllerDesiredRotation = false;
-	
-	zPosition = GetActorLocation().Z + 300.0f;
+	GetCharacterMovement()->SetWalkableFloorAngle(75.0f);  // Allow walking up steeper ramps
 }
 
 // Called when the game starts or when spawned
@@ -64,19 +63,15 @@ void ASurferCharacter::BeginPlay()
 	// Store the initial forward-facing rotation
 	BaseRotationYaw = GetActorRotation().Yaw;
 	TargetRotationYaw = BaseRotationYaw;
+	
+	// Initialize camera height
+	TargetCameraZ = GetActorLocation().Z + CameraOffset;
+	BaseGroundZ = GetActorLocation().Z;
+	LastGroundedZ = BaseGroundZ;
 }
 
-// Called every frame
-void ASurferCharacter::Tick(float DeltaTime)
+void ASurferCharacter::HandleLaneSwitching(float DeltaTime)
 {
-	Super::Tick(DeltaTime);
-
-	// Constant forward running
-	if (CanMove)
-	{
-		AddMovementInput(FVector(1.0f, 0.0f, 0.0f), RunSpeed * DeltaTime);
-	}
-
 	// Smooth lane switching
 	if (bIsSwitchingLane)
 	{
@@ -91,15 +86,60 @@ void ASurferCharacter::Tick(float DeltaTime)
 			TargetRotationYaw = BaseRotationYaw;  // Return to forward facing
 		}
 	}
+}
+
+void ASurferCharacter::MoveCameraWhenFalling()
+{
+	// Prevent camera from moving while dodging
+	if (!isDodging) {
+		// Track if we're on an elevated surface (like a train)
+		if (!GetCharacterMovement()->IsFalling())
+		{
+			LastGroundedZ = GetActorLocation().Z;
+			// Consider elevated if more than 50 units above base ground
+			bWasOnElevatedSurface = (LastGroundedZ > BaseGroundZ + 50.0f);
+			TargetCameraZ = GetActorLocation().Z + CameraOffset;
+		}
+		else if (bWasOnElevatedSurface && GetVelocity().Z < 0)
+		{
+			// Only follow camera down when falling OFF the train (below where we were standing)
+			// Don't follow if we're still above the train (jumping on top of it)
+			if (GetActorLocation().Z < LastGroundedZ - 10.0f)
+			{
+				TargetCameraZ = GetActorLocation().Z + CameraOffset;
+			}
+		}
+	}
+}
+
+// Called every frame
+void ASurferCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	// Constant forward running
+	if (CanMove)
+	{
+		AddMovementInput(FVector(1.0f, 0.0f, 0.0f), RunSpeed * DeltaTime);
+	}
+
+	HandleLaneSwitching(DeltaTime);
 	
 	// Smooth rotation interpolation
 	FRotator CurrentRotation = GetActorRotation();
 	float NewYaw = FMath::FInterpTo(CurrentRotation.Yaw, TargetRotationYaw, DeltaTime, RotationInterpSpeed);
 	SetActorRotation(FRotator(CurrentRotation.Pitch, NewYaw, CurrentRotation.Roll));
 
+	// Camera positioning
 	tempPos = GetActorLocation();
 	tempPos.X -= 850.0f;
-	tempPos.Z = zPosition;
+	
+	MoveCameraWhenFalling();
+	// Camera falls faster than it rises (quicker descent from trains)
+	float CurrentCameraZ = SideViewCamera->GetComponentLocation().Z;
+	float CameraInterpSpeed = (TargetCameraZ < CurrentCameraZ) ? 15.0f : 5.0f;  // Fall fast, rise slow
+	tempPos.Z = FMath::FInterpTo(CurrentCameraZ, TargetCameraZ, DeltaTime, CameraInterpSpeed);
+	
 	SideViewCamera->SetWorldLocation(tempPos);
 }
 
@@ -200,8 +240,9 @@ void ASurferCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActo
 		UE_LOG(LogTemp, Warning, TEXT("Overlap with: %s"), *OtherActor->GetName());
 		
 		ASpike* Spike = Cast<ASpike>(OtherActor);
+		ATrain* Train = Cast<ATrain>(OtherActor);
 
-		if (Spike)
+		if (Spike || Train)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Hit a spike! Restarting..."));
 			

@@ -29,10 +29,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UBoxComponent* FrontCollision;
 
-	// Top surface - walkable area
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	class UBoxComponent* TopCollision;
-
 public:
 	UFUNCTION()
 	void OnFrontOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,

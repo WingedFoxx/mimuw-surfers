@@ -42,8 +42,6 @@ void ALevelSpawnerLevelList::SpawnLevel(bool IsFirst)
 		ABaseLevel* LastLevel = SpawnedLevels.Last();
 		SpawnLocation = LastLevel->GetSpawnLocation()->GetComponentTransform().GetTranslation();
 	}
-
-	// --- REFACTORED LOGIC START ---
     
 	// Safety check: ensure the array isn't empty to prevent crashing
 	if (Levels.Num() == 0)
@@ -76,7 +74,7 @@ void ALevelSpawnerLevelList::SpawnLevel(bool IsFirst)
 	}
 
 	// Optimization: Destroy the old level to free up memory
-	if (SpawnedLevels.Num() > 5)
+	if (SpawnedLevels.Num() > 10)
 	{
 		ABaseLevel* OldLevel = SpawnedLevels[0];
 		if (OldLevel)
