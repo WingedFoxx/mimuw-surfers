@@ -41,9 +41,6 @@ ASurferCharacter::ASurferCharacter()
 	GetCharacterMovement()->MaxWalkSpeed = 600.0f;
 	GetCharacterMovement()->MaxFlySpeed = 600.0f;
 	GetCharacterMovement()->SetWalkableFloorAngle(75.0f);  // Allow walking up steeper ramps
-	// GetCharacterMovement()->bUseControllerDesiredRotation = false;
-	
-	zPosition = GetActorLocation().Z + 300.0f;
 }
 
 // Called when the game starts or when spawned
@@ -68,22 +65,13 @@ void ASurferCharacter::BeginPlay()
 	TargetRotationYaw = BaseRotationYaw;
 	
 	// Initialize camera height
-	TargetCameraZ = GetActorLocation().Z + 300.0f;
+	TargetCameraZ = GetActorLocation().Z + CameraOffset;
 	BaseGroundZ = GetActorLocation().Z;
 	LastGroundedZ = BaseGroundZ;
 }
 
-// Called every frame
-void ASurferCharacter::Tick(float DeltaTime)
+void ASurferCharacter::HandleLaneSwitching(float DeltaTime)
 {
-	Super::Tick(DeltaTime);
-
-	// Constant forward running
-	if (CanMove)
-	{
-		AddMovementInput(FVector(1.0f, 0.0f, 0.0f), RunSpeed * DeltaTime);
-	}
-
 	// Smooth lane switching
 	if (bIsSwitchingLane)
 	{
@@ -98,6 +86,44 @@ void ASurferCharacter::Tick(float DeltaTime)
 			TargetRotationYaw = BaseRotationYaw;  // Return to forward facing
 		}
 	}
+}
+
+void ASurferCharacter::MoveCameraWhenFalling()
+{
+	// Prevent camera from moving while dodging
+	if (!isDodging) {
+		// Track if we're on an elevated surface (like a train)
+		if (!GetCharacterMovement()->IsFalling())
+		{
+			LastGroundedZ = GetActorLocation().Z;
+			// Consider elevated if more than 50 units above base ground
+			bWasOnElevatedSurface = (LastGroundedZ > BaseGroundZ + 50.0f);
+			TargetCameraZ = GetActorLocation().Z + CameraOffset;
+		}
+		else if (bWasOnElevatedSurface && GetVelocity().Z < 0)
+		{
+			// Only follow camera down when falling OFF the train (below where we were standing)
+			// Don't follow if we're still above the train (jumping on top of it)
+			if (GetActorLocation().Z < LastGroundedZ - 10.0f)
+			{
+				TargetCameraZ = GetActorLocation().Z + CameraOffset;
+			}
+		}
+	}
+}
+
+// Called every frame
+void ASurferCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	// Constant forward running
+	if (CanMove)
+	{
+		AddMovementInput(FVector(1.0f, 0.0f, 0.0f), RunSpeed * DeltaTime);
+	}
+
+	HandleLaneSwitching(DeltaTime);
 	
 	// Smooth rotation interpolation
 	FRotator CurrentRotation = GetActorRotation();
@@ -108,26 +134,7 @@ void ASurferCharacter::Tick(float DeltaTime)
 	tempPos = GetActorLocation();
 	tempPos.X -= 850.0f;
 	
-	// Prevent camera from moving while dodging
-	if (!isDodging) {
-		// Track if we're on an elevated surface (like a train)
-		if (!GetCharacterMovement()->IsFalling())
-		{
-			LastGroundedZ = GetActorLocation().Z;
-			// Consider elevated if more than 50 units above base ground
-			bWasOnElevatedSurface = (LastGroundedZ > BaseGroundZ + 50.0f);
-			TargetCameraZ = GetActorLocation().Z + 300.0f;
-		}
-		else if (bWasOnElevatedSurface && GetVelocity().Z < 0)
-		{
-			// Only follow camera down when falling OFF the train (below where we were standing)
-			// Don't follow if we're still above the train (jumping on top of it)
-			if (GetActorLocation().Z < LastGroundedZ - 10.0f)
-			{
-				TargetCameraZ = GetActorLocation().Z + 300.0f;
-			}
-		}
-	}
+	MoveCameraWhenFalling();
 	// Camera falls faster than it rises (quicker descent from trains)
 	float CurrentCameraZ = SideViewCamera->GetComponentLocation().Z;
 	float CameraInterpSpeed = (TargetCameraZ < CurrentCameraZ) ? 15.0f : 5.0f;  // Fall fast, rise slow
