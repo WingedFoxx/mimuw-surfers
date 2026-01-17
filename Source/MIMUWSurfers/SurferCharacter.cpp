@@ -29,6 +29,7 @@ ASurferCharacter::ASurferCharacter()
 	bUseControllerRotationYaw = false;
 
 	SideViewCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Side View Camera"));
+	SideViewCamera->SetFieldOfView(110.0f);
 	SideViewCamera->bUsePawnControlRotation = false;
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
@@ -222,6 +223,7 @@ void ASurferCharacter::Dodge()
 void ASurferCharacter::StopDodge()
 {
 	isDodging = false;
+	
 	// Restore the collision size
     GetCapsuleComponent()->SetCapsuleHalfHeight(DefaultCapsuleHalfHeight, true);
 }
