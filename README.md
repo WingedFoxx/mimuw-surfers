@@ -11,4 +11,4 @@ subway surfers variation implementation
 - [ ] Advanced materials (subway surfers song playing all the time, cool graphics)
 - [ ] Interactive UI (Play, Exit, Enter player name + save scores)
 - [ ] Chosen mechanics (boosters - x2 points, high jumping boots)
-- [ ] Cool somewhat nice grahpics (~~trains~~, coins, ~~player~~, ~~obstacles~~, ~~floor~~, boosters)
+- [ ] Cool and nice graphics (~~trains~~, coins, ~~player~~, ~~obstacles~~, ~~floor~~, boosters)
