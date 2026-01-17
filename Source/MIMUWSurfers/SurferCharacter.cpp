@@ -253,6 +253,12 @@ void ASurferCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActo
 
 			CanMove = false;
 
+			// Play hit sound if assigned
+			if (HitObstacleSound)
+			{
+				UGameplayStatics::PlaySoundAtLocation(this, HitObstacleSound, GetActorLocation());
+			}
+
 			FTimerHandle UnusedHandle;
 			GetWorldTimerManager().SetTimer(UnusedHandle,
 				this, &ASurferCharacter::RestartLevel, 2.f, false);

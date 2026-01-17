@@ -98,4 +98,9 @@ private:
 	float RotationInterpSpeed = 20.0f;
 	
 	void StopDodge();
+
+public:
+	// Sound to play when hitting obstacle
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
+	USoundBase* HitObstacleSound = nullptr;
 };
