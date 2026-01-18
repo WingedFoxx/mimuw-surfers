@@ -8,6 +8,6 @@ subway surfers variation implementation
 - [x] Animations (dodge + coins)
 - [x] Collision detection (fail upon running into obstacle)
 - [x] Particles (explosion upon collision, gold light upon coin collecting)
-- [x] Advanced materials (subway surfers song playing all the time, cool graphics (~~trains~~, ~~coins~~, ~~player~~, ~~obstacles~~, ~~floor~~, boosters))
+- [x] Advanced materials (subway surfers song playing all the time, cool graphics (~~trains~~, ~~coins~~, ~~player~~, ~~obstacles~~, ~~floor~~, ~~boosters~~))
 - [x] Interactive UI (Play, Exit, Save scores + highest score)
-- [ ] Chosen mechanics (coins, boosters - x2 points, high jumping boots)
+- [x] Chosen mechanics (coins, boosters - x2 points, high jumping boots)
