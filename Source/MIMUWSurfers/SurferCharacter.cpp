@@ -10,6 +10,7 @@
 #include "Camera/CameraComponent.h"
 #include "Components/InputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "SurferSaveGame.h"
 #include "Kismet/GameplayStatics.h"
 
 #include "Engine.h"
@@ -49,6 +50,8 @@ ASurferCharacter::ASurferCharacter()
 void ASurferCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	StartingXPosition = GetActorLocation().X;
 
 	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(
 		this, &ASurferCharacter::OnOverlapBegin);
@@ -70,6 +73,68 @@ void ASurferCharacter::BeginPlay()
 	TargetCameraZ = GetActorLocation().Z + CameraOffset;
 	BaseGroundZ = GetActorLocation().Z;
 	LastGroundedZ = BaseGroundZ;
+
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+    
+    if (PlayerController)
+    {
+        // Hide the mouse cursor
+        // PlayerController->bShowMouseCursor = false;
+
+        // Tell Input to focus on the Game (Character) again, not UI
+        FInputModeGameOnly InputMode;
+        PlayerController->SetInputMode(InputMode);
+    }
+	
+	// Load the High Score from disk
+	LoadHighScore();
+}
+
+void ASurferCharacter::LoadHighScore()
+{
+	// Check if a save file exists
+	if (UGameplayStatics::DoesSaveGameExist(SaveSlotName, 0))
+	{
+		// Load it
+		USurferSaveGame* LoadInstance = Cast<USurferSaveGame>(
+			UGameplayStatics::LoadGameFromSlot(SaveSlotName, 0));
+
+		if (LoadInstance)
+		{
+			HighScore = LoadInstance->HighScore;
+			// Debug log to verify
+			UE_LOG(LogTemp, Warning, TEXT("Loaded High Score: %f"), HighScore);
+		}
+	}
+	else
+	{
+		// No save found, this is a new player
+		HighScore = 0.0f;
+	}
+}
+
+void ASurferCharacter::CheckAndSaveHighScore()
+{
+	// Only save if we beat the record
+	if (Score > HighScore)
+	{
+		HighScore = Score;
+
+		// Create a new SaveGame object instance
+		USurferSaveGame* SaveGameInstance = Cast<USurferSaveGame>(
+			UGameplayStatics::CreateSaveGameObject(USurferSaveGame::StaticClass()));
+
+		if (SaveGameInstance)
+		{
+			// Set data
+			SaveGameInstance->HighScore = HighScore;
+
+			// Write to disk
+			UGameplayStatics::SaveGameToSlot(SaveGameInstance, SaveSlotName, 0);
+
+			UE_LOG(LogTemp, Warning, TEXT("New High Score Saved: %f"), HighScore);
+		}
+	}
 }
 
 void ASurferCharacter::HandleLaneSwitching(float DeltaTime)
@@ -123,6 +188,7 @@ void ASurferCharacter::Tick(float DeltaTime)
 	if (CanMove)
 	{
 		AddMovementInput(FVector(1.0f, 0.0f, 0.0f), RunSpeed * DeltaTime);
+		Score = FMath::Max(0.0f, GetActorLocation().X / 10.0f);
 	}
 
 	HandleLaneSwitching(DeltaTime);
@@ -254,15 +320,40 @@ void ASurferCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActo
 
 			CanMove = false;
 
+			CheckAndSaveHighScore();
+			
 			// Play hit sound if assigned
 			if (HitObstacleSound)
 			{
 				UGameplayStatics::PlaySoundAtLocation(this, HitObstacleSound, GetActorLocation());
 			}
+			
+			if (GameOverWidgetClass)
+			{
+				// 1. Create the Widget
+				UUserWidget* GameOverWidget = CreateWidget<UUserWidget>(GetWorld(), GameOverWidgetClass);
+            
+				if (GameOverWidget)
+				{
+					// 2. Add to Screen
+					GameOverWidget->AddToViewport();
 
-			FTimerHandle UnusedHandle;
-			GetWorldTimerManager().SetTimer(UnusedHandle,
-				this, &ASurferCharacter::RestartLevel, 2.f, false);
+					// 3. Enable Mouse Cursor so player can click "Restart"
+					APlayerController* PC = Cast<APlayerController>(GetController());
+					if (PC)
+					{
+						PC->bShowMouseCursor = true;
+                    
+						// Input Mode: UI Only (Stops player from moving character with keys)
+						FInputModeUIOnly InputMode;
+						InputMode.SetWidgetToFocus(GameOverWidget->TakeWidget());
+						PC->SetInputMode(InputMode);
+					}
+				}
+			}
+			// FTimerHandle UnusedHandle;
+			// GetWorldTimerManager().SetTimer(UnusedHandle,
+			// 	this, &ASurferCharacter::RestartLevel, 2.f, false);
 		}
 	}
 }

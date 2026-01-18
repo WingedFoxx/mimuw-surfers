@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Blueprint/UserWidget.h"
 #include "SurferCharacter.generated.h"
 
 UCLASS()
@@ -22,6 +23,8 @@ protected:
 	virtual void BeginPlay() override;
 	void HandleLaneSwitching(float DeltaTime);
 	void MoveCameraWhenFalling();
+	
+	float StartingXPosition;
 
 public:	
 	// Called every frame
@@ -29,7 +32,28 @@ public:
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	
+	// The Game Over Widget Class 
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<UUserWidget> GameOverWidgetClass;
+	
+	// Score and Highest score
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Score")
+	float Score = 0.0f;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Score")
+	float HighScore = 0.0f;
+	
+protected:
+	// Constant name for the save file
+	FString SaveSlotName = "SurferSaveSlot";
+
+	// Function to handle Loading
+	void LoadHighScore();
+
+	// Function to handle Saving
+	void CheckAndSaveHighScore();
+	
 public:
 	class UCameraComponent* GetFrontViewCameraComponent() const
 	{
