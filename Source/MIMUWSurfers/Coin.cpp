@@ -31,6 +31,16 @@ ACoin::ACoin()
 void ACoin::BeginPlay()
 {
 	Super::BeginPlay();
+	SphereCollider->OnComponentBeginOverlap.AddDynamic(this, &ACoin::OnOverlapBegin);
+}
+
+void ACoin::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (OtherActor && OtherActor->IsA(ASurferCharacter::StaticClass()))
+	{
+		// Optionally: play sound, increment score, etc.
+		Destroy();
+	}
 }
 
 // Called every frame
