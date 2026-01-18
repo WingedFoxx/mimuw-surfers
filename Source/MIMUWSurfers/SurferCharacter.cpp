@@ -16,6 +16,7 @@
 #include "Kismet/GameplayStatics.h"
 
 #include "Engine.h"
+#include "TimerManager.h" 
 
 // Sets default values
 ASurferCharacter::ASurferCharacter()
@@ -54,7 +55,8 @@ void ASurferCharacter::BeginPlay()
 	Super::BeginPlay();
 	
 	StartingXPosition = GetActorLocation().X;
-
+	DefaultJumpZVelocity = GetCharacterMovement()->JumpZVelocity;
+	
 	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(
 		this, &ASurferCharacter::OnOverlapBegin);
 
@@ -160,6 +162,61 @@ void ASurferCharacter::SaveGame()
 	UGameplayStatics::SaveGameToSlot(SaveInst, SaveSlotName, 0);
     
 	UE_LOG(LogTemp, Warning, TEXT("Game Saved! High Score: %f, Best Coins: %d"), HighScore, HighestCoins);
+}
+
+void ASurferCharacter::ActivateBooster(EBoosterType Type, float Duration, float Multiplier)
+{
+	// Ensure TimerManager is available
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	switch (Type)
+	{
+	case EBoosterType::HighJump:
+		{
+			// Apply Jump Boost
+			GetCharacterMovement()->JumpZVelocity = DefaultJumpZVelocity * Multiplier;
+
+			// Clear existing timer if any (refreshes duration)
+			World->GetTimerManager().ClearTimer(JumpTimerHandle);
+
+			// Set timer to reset
+			World->GetTimerManager().SetTimer(JumpTimerHandle, this, &ASurferCharacter::ResetJump, Duration, false);
+
+			UE_LOG(LogTemp, Warning, TEXT("High Jump Activated! x%f"), Multiplier);
+			break;
+		}
+
+	case EBoosterType::DoubleScore:
+		{
+			// Apply Score Boost
+			ScoreMultiplier = FMath::RoundToInt(Multiplier);
+
+			// Clear existing timer
+			World->GetTimerManager().ClearTimer(ScoreTimerHandle);
+
+			// Set timer to reset
+			World->GetTimerManager().SetTimer(ScoreTimerHandle, this, &ASurferCharacter::ResetScore, Duration, false);
+
+			UE_LOG(LogTemp, Warning, TEXT("Score Multiplier Activated! x%d"), ScoreMultiplier);
+			break;
+		}
+	}
+}
+
+void ASurferCharacter::ResetJump()
+{
+	if (GetCharacterMovement())
+	{
+		GetCharacterMovement()->JumpZVelocity = DefaultJumpZVelocity;
+	}
+	UE_LOG(LogTemp, Warning, TEXT("Jump Boost Ended."));
+}
+
+void ASurferCharacter::ResetScore()
+{
+	ScoreMultiplier = 1;
+	UE_LOG(LogTemp, Warning, TEXT("Score Boost Ended."));
 }
 
 void ASurferCharacter::HandleLaneSwitching(float DeltaTime)
@@ -330,7 +387,8 @@ void ASurferCharacter::UpdateCoins(AActor* OtherActor)
 	ACoin* Coin = Cast<ACoin>(OtherActor);
 	if (Coin != nullptr)
 	{
-		Coins++;
+		// Apply the Multiplier here
+		Coins += (1 * ScoreMultiplier); 
 	}
 }
 

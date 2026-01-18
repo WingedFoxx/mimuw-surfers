@@ -7,6 +7,13 @@
 #include "Blueprint/UserWidget.h"
 #include "SurferCharacter.generated.h"
 
+UENUM(BlueprintType)
+enum class EBoosterType : uint8
+{
+    HighJump     UMETA(DisplayName = "High Jump"),
+    DoubleScore  UMETA(DisplayName = "Double Score")
+};
+
 UCLASS()
 class MIMUWSURFERS_API ASurferCharacter : public ACharacter
 {
@@ -17,6 +24,9 @@ class MIMUWSURFERS_API ASurferCharacter : public ACharacter
 public:
 	// Sets default values for this character's properties
 	ASurferCharacter();
+	
+	UFUNCTION(BlueprintCallable, Category = "Boosters")	
+	void ActivateBooster(EBoosterType Type, float Duration, float Multiplier);
 
 protected:
 	// Called when the game starts or when spawned
@@ -25,6 +35,17 @@ protected:
 	void MoveCameraWhenFalling();
 	
 	float StartingXPosition;
+	float DefaultJumpZVelocity;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Score")
+	int32 ScoreMultiplier = 1;
+
+	FTimerHandle JumpTimerHandle;
+    FTimerHandle ScoreTimerHandle;
+
+    // Functions to run when timers expire
+    void ResetJump();
+    void ResetScore();
 
 public:	
 	// Called every frame
