@@ -51,6 +51,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Coins")
 	int HighestCoins = 0;
 	
+	UPROPERTY(EditAnywhere, Category = "VFX")
+	class UNiagaraSystem* ExplosionVFX;
+	
 protected:
 	// Constant name for the save file
 	FString SaveSlotName = "SurferSaveSlot";

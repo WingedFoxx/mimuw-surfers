@@ -10,6 +10,8 @@
 #include "Camera/CameraComponent.h"
 #include "Components/InputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
 #include "SurferSaveGame.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -349,18 +351,26 @@ void ASurferCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActo
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Hit an obstacle! Restarting..."));
 			
-			GetMesh()->Deactivate();
-			GetMesh()->SetVisibility(false);
-
-			CanMove = false;
-
-			SaveGame();
-			
 			// Play hit sound if assigned
 			if (HitObstacleSound)
 			{
 				UGameplayStatics::PlaySoundAtLocation(this, HitObstacleSound, GetActorLocation());
 			}
+			
+			if (ExplosionVFX)
+			{
+				UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+					GetWorld(), 
+					ExplosionVFX, 
+					GetActorLocation(), 
+					GetActorRotation()
+				);
+			}
+			
+			GetMesh()->Deactivate();
+			GetMesh()->SetVisibility(false);
+			CanMove = false;
+			SaveGame();
 			
 			if (GameOverWidgetClass)
 			{
