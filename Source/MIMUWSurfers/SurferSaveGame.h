@@ -13,9 +13,12 @@ public:
 	// The variable we want to save
 	UPROPERTY(VisibleAnywhere, Category = Basic)
 	float HighScore;
+	UPROPERTY(VisibleAnywhere, Category = Basic)
+	int HighestCoins;
 
 	USurferSaveGame()
 	{
 		HighScore = 0.0f;
+		HighestCoins = 0;
 	}
 };
