@@ -48,6 +48,8 @@ ASurferCharacter::ASurferCharacter()
 void ASurferCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	StartingXPosition = GetActorLocation().X;
 
 	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(
 		this, &ASurferCharacter::OnOverlapBegin);
@@ -69,6 +71,18 @@ void ASurferCharacter::BeginPlay()
 	TargetCameraZ = GetActorLocation().Z + CameraOffset;
 	BaseGroundZ = GetActorLocation().Z;
 	LastGroundedZ = BaseGroundZ;
+
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+    
+    if (PlayerController)
+    {
+        // Hide the mouse cursor
+        // PlayerController->bShowMouseCursor = false;
+
+        // Tell Input to focus on the Game (Character) again, not UI
+        FInputModeGameOnly InputMode;
+        PlayerController->SetInputMode(InputMode);
+    }
 }
 
 void ASurferCharacter::HandleLaneSwitching(float DeltaTime)
@@ -122,6 +136,7 @@ void ASurferCharacter::Tick(float DeltaTime)
 	if (CanMove)
 	{
 		AddMovementInput(FVector(1.0f, 0.0f, 0.0f), RunSpeed * DeltaTime);
+		Score = FMath::Max(0.0f, GetActorLocation().X / 10.0f);
 	}
 
 	HandleLaneSwitching(DeltaTime);
@@ -258,10 +273,33 @@ void ASurferCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActo
 			{
 				UGameplayStatics::PlaySoundAtLocation(this, HitObstacleSound, GetActorLocation());
 			}
+			
+			if (GameOverWidgetClass)
+			{
+				// 1. Create the Widget
+				UUserWidget* GameOverWidget = CreateWidget<UUserWidget>(GetWorld(), GameOverWidgetClass);
+            
+				if (GameOverWidget)
+				{
+					// 2. Add to Screen
+					GameOverWidget->AddToViewport();
 
-			FTimerHandle UnusedHandle;
-			GetWorldTimerManager().SetTimer(UnusedHandle,
-				this, &ASurferCharacter::RestartLevel, 2.f, false);
+					// 3. Enable Mouse Cursor so player can click "Restart"
+					APlayerController* PC = Cast<APlayerController>(GetController());
+					if (PC)
+					{
+						PC->bShowMouseCursor = true;
+                    
+						// Input Mode: UI Only (Stops player from moving character with keys)
+						FInputModeUIOnly InputMode;
+						InputMode.SetWidgetToFocus(GameOverWidget->TakeWidget());
+						PC->SetInputMode(InputMode);
+					}
+				}
+			}
+			// FTimerHandle UnusedHandle;
+			// GetWorldTimerManager().SetTimer(UnusedHandle,
+			// 	this, &ASurferCharacter::RestartLevel, 2.f, false);
 		}
 	}
 }
