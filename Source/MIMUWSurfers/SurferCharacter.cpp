@@ -9,6 +9,7 @@
 #include "Camera/CameraComponent.h"
 #include "Components/InputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "SurferSaveGame.h"
 #include "Kismet/GameplayStatics.h"
 
 #include "Engine.h"
@@ -83,6 +84,56 @@ void ASurferCharacter::BeginPlay()
         FInputModeGameOnly InputMode;
         PlayerController->SetInputMode(InputMode);
     }
+	
+	// Load the High Score from disk
+	LoadHighScore();
+}
+
+void ASurferCharacter::LoadHighScore()
+{
+	// Check if a save file exists
+	if (UGameplayStatics::DoesSaveGameExist(SaveSlotName, 0))
+	{
+		// Load it
+		USurferSaveGame* LoadInstance = Cast<USurferSaveGame>(
+			UGameplayStatics::LoadGameFromSlot(SaveSlotName, 0));
+
+		if (LoadInstance)
+		{
+			HighScore = LoadInstance->HighScore;
+			// Debug log to verify
+			UE_LOG(LogTemp, Warning, TEXT("Loaded High Score: %f"), HighScore);
+		}
+	}
+	else
+	{
+		// No save found, this is a new player
+		HighScore = 0.0f;
+	}
+}
+
+void ASurferCharacter::CheckAndSaveHighScore()
+{
+	// Only save if we beat the record
+	if (Score > HighScore)
+	{
+		HighScore = Score;
+
+		// Create a new SaveGame object instance
+		USurferSaveGame* SaveGameInstance = Cast<USurferSaveGame>(
+			UGameplayStatics::CreateSaveGameObject(USurferSaveGame::StaticClass()));
+
+		if (SaveGameInstance)
+		{
+			// Set data
+			SaveGameInstance->HighScore = HighScore;
+
+			// Write to disk
+			UGameplayStatics::SaveGameToSlot(SaveGameInstance, SaveSlotName, 0);
+
+			UE_LOG(LogTemp, Warning, TEXT("New High Score Saved: %f"), HighScore);
+		}
+	}
 }
 
 void ASurferCharacter::HandleLaneSwitching(float DeltaTime)
@@ -268,6 +319,8 @@ void ASurferCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActo
 
 			CanMove = false;
 
+			CheckAndSaveHighScore();
+			
 			// Play hit sound if assigned
 			if (HitObstacleSound)
 			{
