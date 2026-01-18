@@ -45,7 +45,9 @@ protected:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Triggers")
 		UBoxComponent* SpawnLocation;
 
+	void PlaceCoins();
+
 public:
-	UBoxComponent* GetTrigger();
-	UBoxComponent* GetSpawnLocation();
+	UBoxComponent* GetTrigger() const;
+	UBoxComponent* GetSpawnLocation() const;
 };

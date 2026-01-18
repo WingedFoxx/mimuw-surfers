@@ -14,14 +14,8 @@ ABaseLevel::ABaseLevel()
 
 }
 
-// Called when the game starts or when spawned
-void ABaseLevel::BeginPlay()
+void ABaseLevel::PlaceCoins()
 {
-	Super::BeginPlay();
-
-	if (Trigger != nullptr)
-		Trigger->bHiddenInGame = true;
-
 	if (CoinClass == nullptr || CoinsNum <= 0 || Lanes.Num() == 0)
 	{
 		return;
@@ -37,22 +31,29 @@ void ABaseLevel::BeginPlay()
 	{
 		const int Lane = UKismetMathLibrary::RandomIntegerInRange(0, Lanes.Num() - 1);
 
-		FVector Location(GetActorLocation().X + LevelBounds.X - i * Step, GetActorLocation().Y + Lanes[Lane], GetActorLocation().Z + 200.f);
+		// FIX 1: Raise the Z value (e.g., +1000) so the trace starts ABOVE the train.
+		FVector Location(GetActorLocation().X + LevelBounds.X - i * Step, GetActorLocation().Y + Lanes[Lane], GetActorLocation().Z + 1000.f);
 
 		FHitResult Hit;
 		FVector Start = Location;
-		FVector End = Location - FVector(0,0,500.f);
+        
+		// FIX 2: Increase the trace length (e.g., 2000) so it reaches the floor from the new height.
+		FVector End = Location - FVector(0, 0, 2000.f);
+        
 		FCollisionQueryParams TraceParams;
 		TraceParams.AddIgnoredActor(this);
 
-
-		bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, TraceParams);
-		if (bHit)
+		if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, TraceParams))
 		{
+			// Use the exact hit location (whether it's the train roof or the floor)
+			float CoinZ = Hit.Location.Z + CoinOffset;
+
+			FVector CoinLocation = FVector(Hit.Location.X, Hit.Location.Y, CoinZ);
+
 			FActorSpawnParameters SpawnParams;
 			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-			ACoin* SpawnedCoin = GetWorld()->SpawnActor<ACoin>(CoinClass, Hit.Location + FVector(0,0,CoinOffset), FRotator::ZeroRotator, SpawnParams);
-			if(SpawnedCoin)
+            
+			if (ACoin* SpawnedCoin = GetWorld()->SpawnActor<ACoin>(CoinClass, CoinLocation, FRotator::ZeroRotator, SpawnParams))
 			{
 				SpawnedCoin->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
 			}
@@ -60,19 +61,30 @@ void ABaseLevel::BeginPlay()
 	}
 }
 
+// Called when the game starts or when spawned
+void ABaseLevel::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (Trigger != nullptr)
+		Trigger->bHiddenInGame = true;
+
+	PlaceCoins();
+}
+
 // Called every frame
-void ABaseLevel::Tick(float DeltaTime)
+void ABaseLevel::Tick(const float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
 }
 
-UBoxComponent* ABaseLevel::GetTrigger()
+UBoxComponent* ABaseLevel::GetTrigger() const
 {
 	return Trigger;
 }
 
-UBoxComponent* ABaseLevel::GetSpawnLocation()
+UBoxComponent* ABaseLevel::GetSpawnLocation() const
 {
 	return SpawnLocation;
 }

@@ -241,14 +241,6 @@ void ASurferCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActo
 	{
 		// Debug: Print what actor we're overlapping with
 		UE_LOG(LogTemp, Warning, TEXT("Overlap with: %s"), *OtherActor->GetName());
-
-		ACoin* Coin = Cast<ACoin>(OtherActor);
-		if (Coin)
-		{
-			Coin->SetActorHiddenInGame(true);
-			Coin->SetActorEnableCollision(false);
-			return;
-		}
 		
 		ASpike* Spike = Cast<ASpike>(OtherActor);
 		ATrain* Train = Cast<ATrain>(OtherActor);
