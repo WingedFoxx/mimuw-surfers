@@ -5,6 +5,7 @@
 #include "BaseLevel.h"
 #include "Engine.h"
 #include "Components/BoxComponent.h"
+#include "SurferCharacter.h" // Include the header for the player character class
 
 // Sets default values
 ALevelSpawnerLevelList::ALevelSpawnerLevelList()
@@ -88,6 +89,10 @@ void ALevelSpawnerLevelList::SpawnLevel(bool IsFirst)
 void ALevelSpawnerLevelList::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 	UPrimitiveComponent* OtherOverlappedComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	SpawnLevel(false);
+	// Only spawn a new level if the player character overlaps
+	if (OtherActor && OtherActor->IsA(ASurferCharacter::StaticClass()))
+	{
+		SpawnLevel(false);
+	}
 }
 
