@@ -38,7 +38,11 @@ void ACoin::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherAct
 {
 	if (OtherActor && OtherActor->IsA(ASurferCharacter::StaticClass()))
 	{
-		// Optionally: play sound, increment score, etc.
+		// Play coin sound if assigned
+		if (CoinSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, CoinSound, GetActorLocation());
+		}
 		Destroy();
 	}
 }

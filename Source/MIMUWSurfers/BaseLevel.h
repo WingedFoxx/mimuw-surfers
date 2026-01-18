@@ -46,6 +46,7 @@ protected:
 		UBoxComponent* SpawnLocation;
 
 	void PlaceCoins();
+	void PlaceCoin(FVector LevelBounds, float Step, int i);
 
 public:
 	UBoxComponent* GetTrigger() const;
