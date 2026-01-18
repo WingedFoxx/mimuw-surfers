@@ -43,16 +43,23 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Score")
 	float HighScore = 0.0f;
+
+	// Coins and highest coins:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Coins")
+	int Coins = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Coins")
+	int HighestCoins = 0;
 	
 protected:
 	// Constant name for the save file
 	FString SaveSlotName = "SurferSaveSlot";
 
 	// Function to handle Loading
-	void LoadHighScore();
-
+	void LoadHighScores();
+	
 	// Function to handle Saving
-	void CheckAndSaveHighScore();
+	void SaveGame();
 	
 public:
 	class UCameraComponent* GetFrontViewCameraComponent() const
@@ -122,6 +129,8 @@ private:
 	float RotationInterpSpeed = 20.0f;
 	
 	void StopDodge();
+	
+	void UpdateCoins(AActor* OtherActor);
 
 public:
 	// Sound to play when hitting obstacle

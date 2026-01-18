@@ -5,6 +5,7 @@
 
 #include "Spike.h"
 #include "Train.h"
+#include "Coin.h"
 #include "Components/CapsuleComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/InputComponent.h"
@@ -86,10 +87,10 @@ void ASurferCharacter::BeginPlay()
     }
 	
 	// Load the High Score from disk
-	LoadHighScore();
+	LoadHighScores();
 }
 
-void ASurferCharacter::LoadHighScore()
+void ASurferCharacter::LoadHighScores()
 {
 	// Check if a save file exists
 	if (UGameplayStatics::DoesSaveGameExist(SaveSlotName, 0))
@@ -101,8 +102,10 @@ void ASurferCharacter::LoadHighScore()
 		if (LoadInstance)
 		{
 			HighScore = LoadInstance->HighScore;
+			HighestCoins = LoadInstance->HighestCoins;
 			// Debug log to verify
 			UE_LOG(LogTemp, Warning, TEXT("Loaded High Score: %f"), HighScore);
+			UE_LOG(LogTemp, Warning, TEXT("Loaded High Coins: %d"), HighestCoins);
 		}
 	}
 	else
@@ -112,28 +115,49 @@ void ASurferCharacter::LoadHighScore()
 	}
 }
 
-void ASurferCharacter::CheckAndSaveHighScore()
+void ASurferCharacter::SaveGame()
 {
-	// Only save if we beat the record
-	if (Score > HighScore)
+	// Try to LOAD the existing save file first
+	USurferSaveGame* SaveInst = Cast<USurferSaveGame>(
+		UGameplayStatics::LoadGameFromSlot(SaveSlotName, 0));
+
+	// If it doesn't exist, create a new one
+	if (!SaveInst)
 	{
-		HighScore = Score;
-
-		// Create a new SaveGame object instance
-		USurferSaveGame* SaveGameInstance = Cast<USurferSaveGame>(
+		SaveInst = Cast<USurferSaveGame>(
 			UGameplayStatics::CreateSaveGameObject(USurferSaveGame::StaticClass()));
-
-		if (SaveGameInstance)
-		{
-			// Set data
-			SaveGameInstance->HighScore = HighScore;
-
-			// Write to disk
-			UGameplayStatics::SaveGameToSlot(SaveGameInstance, SaveSlotName, 0);
-
-			UE_LOG(LogTemp, Warning, TEXT("New High Score Saved: %f"), HighScore);
-		}
 	}
+
+	// Update High Score (Independently)
+	// We check if current Score is better than the Saved Score
+	if (Score > SaveInst->HighScore)
+	{
+		SaveInst->HighScore = Score;
+		// Update local variable so the Widget sees the new high score immediately
+		HighScore = Score; 
+	}
+	else
+	{
+		// If we didn't beat it, ensure our local variable matches the best saved one
+		HighScore = SaveInst->HighScore;
+	}
+
+	// Update Highest Coins (Independently)
+	// We check if current Coins are better than Saved Coins
+	if (Coins > SaveInst->HighestCoins)
+	{
+		SaveInst->HighestCoins = Coins;
+		HighestCoins = Coins;
+	}
+	else
+	{
+		HighestCoins = SaveInst->HighestCoins;
+	}
+
+	// Write the final result to disk
+	UGameplayStatics::SaveGameToSlot(SaveInst, SaveSlotName, 0);
+    
+	UE_LOG(LogTemp, Warning, TEXT("Game Saved! High Score: %f, Best Coins: %d"), HighScore, HighestCoins);
 }
 
 void ASurferCharacter::HandleLaneSwitching(float DeltaTime)
@@ -299,8 +323,17 @@ void ASurferCharacter::RestartLevel()
 	UGameplayStatics::OpenLevel(this, FName(*GetWorld()->GetName()));
 }
 
+void ASurferCharacter::UpdateCoins(AActor* OtherActor)
+{
+	ACoin* Coin = Cast<ACoin>(OtherActor);
+	if (Coin != nullptr)
+	{
+		Coins++;
+	}
+}
+
 void ASurferCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-	UPrimitiveComponent* OtherOverlappedComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+                                      UPrimitiveComponent* OtherOverlappedComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (OtherActor != nullptr)
 	{
@@ -310,16 +343,18 @@ void ASurferCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActo
 		ASpike* Spike = Cast<ASpike>(OtherActor);
 		ATrain* Train = Cast<ATrain>(OtherActor);
 
+		UpdateCoins(OtherActor);
+
 		if (Spike || Train)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Hit a spike! Restarting..."));
+			UE_LOG(LogTemp, Warning, TEXT("Hit an obstacle! Restarting..."));
 			
 			GetMesh()->Deactivate();
 			GetMesh()->SetVisibility(false);
 
 			CanMove = false;
 
-			CheckAndSaveHighScore();
+			SaveGame();
 			
 			// Play hit sound if assigned
 			if (HitObstacleSound)
